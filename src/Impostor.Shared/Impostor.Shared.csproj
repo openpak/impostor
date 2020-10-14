@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-      <TargetFrameworks>net452;net5.0</TargetFrameworks>
-      <DebugType Condition=" '$(Configuration)' == 'Release' ">None</DebugType>
+        <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+        <DebugType Condition=" '$(Configuration)' == 'Release' ">None</DebugType>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="System.Memory" Version="4.5.4" />
+        <PackageReference Include="System.Memory" Version="4.5.4" />
     </ItemGroup>
 
 </Project>
