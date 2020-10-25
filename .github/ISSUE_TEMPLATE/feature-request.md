@@ -1,6 +1,10 @@
 ---
 name: Feature request
 about: To ask and request new features with Impostor
+title: 
+labels: 
+assignees: 
+
 ---
 
 # Feature Request

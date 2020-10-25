@@ -1,6 +1,10 @@
 ---
 name: Bug Reporting
 about: Bugs within Imposter
+title: 
+labels: 
+assignees: 
+
 ---
 
 # Bug Report

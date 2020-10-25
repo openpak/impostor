@@ -1,6 +1,10 @@
 ---
 name: Api suggestion
 about: To make suggestions for the plugin api
+title: 
+labels: 
+assignees: 
+
 ---
 
 # Api Suggestion

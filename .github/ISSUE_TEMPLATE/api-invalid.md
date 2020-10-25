@@ -1,6 +1,10 @@
 ---
 name: Api invalid data
 about: To let us know about invalid data in the api
+title: 
+labels: 
+assignees: 
+
 ---
 
 # Api missing data
