@@ -8,13 +8,12 @@ namespace Impostor.Server.Events.Player
 {
     public class PlayerVentEvent : IPlayerVentEvent
     {
-        public PlayerVentEvent(IGame game, IClientPlayer sender, IInnerPlayerControl innerPlayerPhysics, Vent vent, bool ventEnter)
+        public PlayerVentEvent(IGame game, IClientPlayer sender, IInnerPlayerControl innerPlayerPhysics, Vent vent)
         {
             Game = game;
             ClientPlayer = sender;
             PlayerControl = innerPlayerPhysics;
             Vent = vent;
-            VentEnter = ventEnter;
         }
 
         public IGame Game { get; }
@@ -24,7 +23,5 @@ namespace Impostor.Server.Events.Player
         public IInnerPlayerControl PlayerControl { get; }
 
         public Vent Vent { get; }
-
-        public bool VentEnter { get; }
     }
 }
