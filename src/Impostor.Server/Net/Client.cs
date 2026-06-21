@@ -80,6 +80,7 @@ namespace Impostor.Server.Net
                     CheatingHostMode.Never => true,
                     _ => true,
                 },
+                CheatCategory.PacketSize => _antiCheatConfig.EnablePacketSizeChecks,
                 CheatCategory.Other => true,
                 _ => LogUnknownCategory(category),
             };
