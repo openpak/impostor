@@ -1,3 +1,13 @@
+# OpenPak build of Impostor
+
+Unmodified fork of [Impostor](https://github.com/Impostor/Impostor) (GPL-3.0), the open-source
+Among Us server. OpenPak runs it as its own container (`ghcr.io/openpak/impostor`, built on
+`openpak-v*` tags from upstream's Dockerfile) behind the redirect and TLS front in
+[`servers/among-us`](https://github.com/openpak/among-us). No source changes; the GPL work stays
+its own process, aggregated with the AGPL stack and nothing more.
+
+---
+
 # Impostor
 
 [![Discord](https://img.shields.io/badge/Discord-chat-blue?style=flat-square)](https://discord.gg/Mk3w6Tb)
