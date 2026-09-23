@@ -1,16 +1,7 @@
 name: CI
 
 on:
-  push:
-    paths:
-      - '.github/workflows/ci.yml'
-      - 'src/**/**'
-      - 'build.cake'
-  pull_request:
-    paths:
-      - '.github/workflows/ci.yml'
-      - 'src/**/**'
-      - 'build.cake'
+  workflow_dispatch:
 
 jobs:
   build:
