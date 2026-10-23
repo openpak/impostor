@@ -11,3 +11,14 @@ container is aggregation.
 To take an upstream release: merge it, tag `openpak-v<version>`, bump `IMPOSTOR_REF` in
 `among-us`. The server runs beside the Among Us front that logs and proxies the matchmaker
 calls, on port 22601 (ports 22600–22609 claimed in the workspace `ports.md`).
+
+## Region nodes
+
+A federation node runs the same `among-us` image with no code change: set
+`IMPOSTOR_Server__PublicIp` to the node's public IPv4 (and keep `PublicPort`/`ListenPort` 22603),
+leave `OPENPAK_ROUTING_URL` unset, and announce the node's `impostor` role as `ip:22603`. Home's
+front sends hosts there and answers joins for the codes the node reports. Not done yet: the
+node-side room reporter that posts each game's code to home's
+`POST /internal/v1/amongus/rooms` (see `among-us/README.md`), likely a small plugin on
+`GameCreatedEvent`/`GameDestroyedEvent`; until it exists a node's rooms can be hosted but not
+joined by code.
