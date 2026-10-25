@@ -1,53 +1,47 @@
-# OpenPak build of Impostor
-
-Unmodified fork of [Impostor](https://github.com/Impostor/Impostor) (GPL-3.0), the open-source
-Among Us server, kept so OpenPak builds from a tag it controls. The
-[`among-us`](https://github.com/openpak/among-us) image builds Impostor from this repository at
-the `openpak-v*` tag named by its `IMPOSTOR_REF` build argument and runs it beside the OpenPak
-front in one container. No source changes; the GPL work stays its own process. To take a new
-upstream release: merge it, tag `openpak-v<version>`, bump `IMPOSTOR_REF` in among-us.
-
----
-
 # Impostor
 
-[![Discord](https://img.shields.io/badge/Discord-chat-blue?style=flat-square)](https://discord.gg/Mk3w6Tb)
-[![CI](https://github.com/Impostor/Impostor/workflows/CI/badge.svg)](https://github.com/Impostor/Impostor/actions)
+OpenPak's Impostor.
 
-Impostor is the first working **Among Us** private server, written in C#.
+| | |
+| --- | --- |
+| Network | Among Us |
+| Role | Among Us private server (C#), unmodified upstream Impostor |
+| Used by | [`among-us`](https://github.com/openpak/among-us), which runs it beside the OpenPak front |
+| Based on | [Impostor](https://github.com/Impostor/Impostor) (GPL-3.0) |
+| Licence | GPL-3.0 |
 
-As Among Us is actively updated, you may want to use the latest build from the master branch if you want to play on the latest version of Among Us that supported by Impostor.
+## What it serves
 
-If you want to play on an older version of Among Us, you can download old releases from [here](https://github.com/Impostor/Impostor/releases/), however these versions are less supported.
+| Service | What |
+| --- | --- |
+| HTTP (TCP 22023) | Matchmaking; points Among Us at the UDP service |
+| UDP (22023) | Game traffic |
 
-## Features
+## Run
 
-- All Among Us features are implemented. It is a full replacement for the official server.
-- Plugin support.
-- Server-sided anticheat.
+Set `PublicIp` in `config.json` to the address players connect to, then run:
 
-## Installation
+```sh
+./Impostor.Server
+```
 
-### Client
+## Docs
 
-If you just want to play on a server hosted by someone else, you need to configure your client to connect to an Impostor server. Please go to [this website](https://impostor.github.io/Impostor) to set up your client by following the instructions for your OS there.
+- [Protocol](docs/protocol.md)
+- [Evidence](docs/evidence.md)
+- [Deploy](docs/deploy.md)
+- [Notes](docs/notes.md)
+- [Upstream README](docs/upstream.md)
+- [Documentation index](docs/README.md)
+- [Running the server](docs/Running-the-server.md)
+- [Server configuration](docs/Server-configuration.md)
+- [Building from source](docs/Building-from-source.md)
+- [Writing a plugin](docs/Writing-a-plugin.md)
+- [HTTP server](docs/Http-server.md)
+- [FAQ](docs/FAQ.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Upgrading](docs/Upgrading.md)
 
-### Server
+## Licence
 
-See the [docs](docs/Running-the-server.md) for instructions on how to set it up.
-
-## Troubleshooting
-
-See [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) to solve issues with the Impostor client or the server.
-
-## Contributing
-
-See [CONTRIBUTING](CONTRIBUTING.md).
-
-## License
-
-This software is distributed under the **GNU GPLv3** License.
-
-## Credits
-
-- [willardf/Hazel-Networking](https://github.com/willardf/Hazel-Networking)
+GPL-3.0, the upstream Impostor licence, kept for this fork. See [LICENSE](LICENSE).
