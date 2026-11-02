@@ -29,9 +29,7 @@ Set `PublicIp` in `config.json` to the address players connect to, then run:
 
 - [Protocol](docs/protocol.md)
 - [Deploy](docs/deploy.md)
-- [Notes](docs/notes.md)
 - [Upstream README](docs/upstream.md)
-- [Documentation index](docs/README.md)
 - [Running the server](docs/Running-the-server.md)
 - [Server configuration](docs/Server-configuration.md)
 - [Building from source](docs/Building-from-source.md)
