@@ -28,7 +28,6 @@ Set `PublicIp` in `config.json` to the address players connect to, then run:
 ## Docs
 
 - [Protocol](docs/protocol.md)
-- [Evidence](docs/evidence.md)
 - [Deploy](docs/deploy.md)
 - [Notes](docs/notes.md)
 - [Upstream README](docs/upstream.md)
