@@ -131,7 +131,7 @@ namespace Impostor.Server.Net.Manager
             var id = NextId();
 
             client.Id = id;
-            _logger.LogTrace("Client connected.");
+            _logger.LogInformation("connect id={Id} version={Version}", id, clientVersion.ToString());
             _clients.TryAdd(id, client);
 
             await _eventManager.CallAsync(new ClientConnectedEvent(connection, client));

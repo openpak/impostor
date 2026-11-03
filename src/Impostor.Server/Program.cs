@@ -220,6 +220,9 @@ namespace Impostor.Server
                             }
                         }
 
+                        var requestLogger = app.ApplicationServices.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>().CreateLogger("Impostor.Http");
+                        app.Use(next => RequestLog.Middleware(next, requestLogger));
+
                         app.UseRouting();
 
                         app.UseEndpoints(endpoints =>

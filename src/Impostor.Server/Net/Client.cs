@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Impostor.Api;
@@ -13,6 +14,7 @@ using Impostor.Api.Net.Messages.C2S;
 using Impostor.Api.Net.Messages.S2C;
 using Impostor.Hazel;
 using Impostor.Server.Net.Manager;
+using Impostor.Server.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -122,6 +124,29 @@ namespace Impostor.Server.Net
         }
 
         public override async ValueTask HandleMessageAsync(IMessageReader reader, MessageType messageType)
+        {
+            var flag = reader.Tag;
+            if (RequestLog.IsHot(flag))
+            {
+                await HandleMessageCoreAsync(reader, messageType);
+                return;
+            }
+
+            var start = Stopwatch.GetTimestamp();
+            try
+            {
+                await HandleMessageCoreAsync(reader, messageType);
+            }
+            catch
+            {
+                RequestLog.Command(_logger, MessageFlags.FlagToString(flag), "error", start);
+                throw;
+            }
+
+            RequestLog.Command(_logger, MessageFlags.FlagToString(flag), "ok", start);
+        }
+
+        private async ValueTask HandleMessageCoreAsync(IMessageReader reader, MessageType messageType)
         {
             var flag = reader.Tag;
 
@@ -475,7 +500,7 @@ namespace Impostor.Server.Net
                 _logger.LogError(ex, "Exception caught in client disconnection.");
             }
 
-            _logger.LogInformation("Client {0} disconnecting, reason: {1}", Id, reason);
+            _logger.LogInformation("disconnect id={Id} reason={Reason}", Id, reason);
             _clientManager.Remove(this);
             await _gameManager.OnClientDisconnectAsync(this);
         }

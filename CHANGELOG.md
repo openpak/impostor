@@ -1,5 +1,13 @@
 # Changelog — impostor (OpenPak fork)
 
+## openpak-v1.10.11 — 2026-11-03
+
+- One log line per request or message, to stdout (Serilog console, picked up from journald):
+  `http <method> <path> -> <status> <ms>ms` for the HTTP API (`/healthz` skipped) and
+  `cmd <MessageName> -> ok|error <ms>ms` per Hazel message, plus `connect id=` and `disconnect id=`
+  lines. Never the query string, headers, bodies, nicknames or message bytes. The per-packet game-data
+  relay (GameData, GameDataTo, PackedGameDataTo) is not logged. Tests in `RequestLogTests`.
+
 ## openpak-v1.10.10 — 2026-11-03
 
 - Rewards state is durable: the session clock, the PUID -> BAAS map and counted sessions not yet
