@@ -145,6 +145,7 @@ namespace Impostor.Server
                     services.AddSingleton<IEventManager, EventManager>();
                     services.AddSingleton<Matchmaker>();
                     services.AddHostedService<MatchmakerService>();
+                    services.AddHostedService<Impostor.Server.Rewards.RewardsService>();
                 })
                 .UseSerilog((context, loggerConfiguration) =>
                 {

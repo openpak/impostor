@@ -45,6 +45,12 @@ namespace Impostor.Server.Net.Inner.Objects
 
         public PlayerOutfit CurrentOutfit => Outfits[CurrentOutfitType];
 
+        /// <summary>
+        /// Gets the EOS product user id the client reported for this player (empty until its PlayerInfo
+        /// arrives). It is the client's claim: only OpenPak's lookup of a PUID eosd issued makes it an account.
+        /// </summary>
+        public string ProductUserId { get; private set; } = string.Empty;
+
         public RoleTypes? RoleType { get; internal set; }
 
         public RoleTypes? RoleWhenAlive { get; internal set; }
@@ -177,7 +183,8 @@ namespace Impostor.Server.Net.Inner.Objects
 
             // Impostor doesn't expose fields that aren't properly validated
             reader.ReadString(); // FriendCode
-            reader.ReadString(); // PUID
+            var puid = reader.ReadString();
+            ProductUserId = puid.Length <= 64 ? puid : string.Empty;
 
             return ValueTask.CompletedTask;
         }
