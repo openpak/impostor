@@ -25,6 +25,7 @@ rooms can be hosted but not joined by code.
 | `REWARDS_EVENTS_KEY` | rewards events key |
 | `EOS_INTERNAL_URL` | eosd health listener, `http://openpak-eos:22621` |
 | `EOS_INTERNAL_KEY` | the key eosd was given for `/internal/v1/puid/<puid>` |
+| `IMPOSTOR_DATABASE_URL` | Postgres (`postgres://impostor:...@openpak-postgres:5432/impostor?sslmode=disable`): session clock, PUID map, outbox. Pool of 2. Unset: memory only (development) |
 | `REWARDS_SESSION_MIN` | optional, default 3 minutes (.NET TimeSpan format, for example `00:03:00`) |
 
 Any of the four unset: the reporter stays idle and logs "Rewards events are off".

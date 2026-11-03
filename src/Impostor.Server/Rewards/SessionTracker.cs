@@ -10,6 +10,9 @@ namespace Impostor.Server.Rewards
     /// <summary>One room as the server sees it right now. The id must be unique over time (it is the dedupe key).</summary>
     internal sealed record Room(string Id, IReadOnlyList<Identity> Players);
 
+    /// <summary>The session clock as saved: when each player-in-room started, and who was already counted.</summary>
+    internal sealed record ClockState(Dictionary<string, long> Since, List<string> Emitted);
+
     /// <summary>One counted session.</summary>
     internal sealed record SessionEvent(string EventId, string Metric, Identity Player, string RoomId, DateTimeOffset At);
 
@@ -29,6 +32,27 @@ namespace Impostor.Server.Rewards
         {
             _metric = metric;
             _min = min;
+        }
+
+        /// <summary>Gets the clock as plain data, for saving.</summary>
+        /// <returns>The clock.</returns>
+        public ClockState State() => new(
+            _since.ToDictionary(kv => kv.Key, kv => kv.Value.ToUnixTimeMilliseconds()),
+            _emitted.ToList());
+
+        /// <summary>Loads a saved clock before the first Tick; keys of rooms that are gone drop at the next Tick.</summary>
+        /// <param name="state">The saved clock.</param>
+        public void Restore(ClockState state)
+        {
+            foreach (var kv in state.Since)
+            {
+                _since[kv.Key] = DateTimeOffset.FromUnixTimeMilliseconds(kv.Value);
+            }
+
+            foreach (var k in state.Emitted)
+            {
+                _emitted.Add(k);
+            }
         }
 
         public IReadOnlyList<SessionEvent> Tick(DateTimeOffset now, IEnumerable<Room> rooms)

@@ -93,6 +93,64 @@ namespace Impostor.Tests
             Assert.Null(await r.ResolveAsync(string.Empty, T0, CancellationToken.None));
         }
 
+        // Against a real Postgres when IMPOSTOR_TEST_DATABASE_URL is set: a new process (new objects, same
+        // database) keeps the session clock, the PUID map and the undelivered events.
+        [Fact]
+        public async Task RestartKeepsClockPuidMapAndOutbox()
+        {
+            var url = Environment.GetEnvironmentVariable("IMPOSTOR_TEST_DATABASE_URL");
+            if (string.IsNullOrEmpty(url))
+            {
+                return;
+            }
+
+            var seed = await StateStore.OpenAsync(url, CancellationToken.None);
+            await using (var c = new Npgsql.NpgsqlConnection(StateStore.ConnectionString(url)))
+            {
+                await c.OpenAsync();
+                await new Npgsql.NpgsqlCommand("TRUNCATE impostor_session_clock, impostor_puid, impostor_outbox", c).ExecuteNonQueryAsync();
+            }
+
+            await seed.DisposeAsync();
+
+            RewardsCore Boot(Fake rewards, Fake eos) => new(
+                "game_sessions.among-us",
+                new SessionTracker("game_sessions.among-us", TimeSpan.FromMinutes(3)),
+                new PuidResolver("http://eos", "k", new HttpClient(eos), TimeSpan.FromSeconds(60)),
+                new RewardsEmitter("http://rewards", "k", "impostor", new HttpClient(rewards)),
+                ct => StateStore.OpenAsync(url, ct),
+                null);
+
+            var room = new Room("ABCDEF-1", new[] { A, B });
+            var rewards1 = new Fake(_ => HttpStatusCode.InternalServerError);
+            var eos1 = new Fake(_ => HttpStatusCode.OK) { Reply = "{\"baas_user_id\":\"aaaa\"}" };
+            var one = Boot(rewards1, eos1);
+            string? mapped = null;
+            await one.PrepareAsync(T0, CancellationToken.None);
+            await one.MapAsync("puid1", T0, b => mapped = b, CancellationToken.None);
+            Assert.Equal("aaaa", mapped);
+            await one.TickAsync(T0, new[] { room }, CancellationToken.None);
+            await one.TickAsync(T0.AddMinutes(2), new[] { room }, CancellationToken.None);
+            await one.TickAsync(T0.AddMinutes(3), new[] { room }, CancellationToken.None); // counted; rewards is down
+
+            // Restart: all new objects, eosd now unreachable, rewards back up.
+            var rewards2 = new Fake(_ => HttpStatusCode.OK);
+            var eos2 = new Fake(_ => HttpStatusCode.NotFound);
+            var two = Boot(rewards2, eos2);
+            string? mapped2 = null;
+            await two.TickAsync(T0.AddMinutes(4), new[] { room }, CancellationToken.None); // loads state, delivers the outbox
+            await two.MapAsync("puid1", T0.AddMinutes(4), b => mapped2 = b, CancellationToken.None);
+            Assert.Equal("aaaa", mapped2); // from Postgres, eosd was not asked
+            Assert.Empty(eos2.Urls);
+            Assert.Equal(2, JsonDocument.Parse(rewards2.Bodies[^1]).RootElement.GetProperty("events").GetArrayLength());
+
+            // The clock survived: nobody is counted twice, and a fresh pair gets its full 3 minutes.
+            var rewards3 = new Fake(_ => HttpStatusCode.OK);
+            var three = Boot(rewards3, eos2);
+            await three.TickAsync(T0.AddMinutes(5), new[] { room }, CancellationToken.None);
+            Assert.Empty(rewards3.Bodies); // outbox was cleared by the delivery above, nothing re-emitted
+        }
+
         private sealed class Fake : HttpMessageHandler
         {
             private readonly Func<HttpRequestMessage, HttpStatusCode> _first;

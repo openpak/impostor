@@ -20,7 +20,7 @@ namespace Impostor.Server.Rewards
     {
         private const int Batch = 50;
         private const int QueueSize = 2048;
-        private static readonly TimeSpan MaxAge = TimeSpan.FromHours(6);
+        private static readonly TimeSpan MaxAge = TimeSpan.FromDays(7);
 
         private readonly string _url;
         private readonly string _key;
@@ -44,6 +44,9 @@ namespace Impostor.Server.Rewards
 
         public int Pending => _queue.Count;
 
+        /// <summary>Gets or sets a callback told the ids of events rewards accepted (to drop them from the outbox).</summary>
+        public Func<IReadOnlyList<string>, Task>? OnDelivered { get; set; }
+
         public void Event(SessionEvent e)
         {
             if (Enabled && _queue.Count < QueueSize)
@@ -61,6 +64,7 @@ namespace Impostor.Server.Rewards
             }
 
             var sent = 0;
+            var expired = new List<string>();
             while (!_queue.IsEmpty)
             {
                 var batch = new List<SessionEvent>();
@@ -69,6 +73,7 @@ namespace Impostor.Server.Rewards
                     if (now - e.At > MaxAge)
                     {
                         _queue.TryDequeue(out _);
+                        expired.Add(e.EventId);
                         continue;
                     }
 
@@ -84,6 +89,18 @@ namespace Impostor.Server.Rewards
                 if (await PostAsync(batch, ct))
                 {
                     sent += batch.Count;
+                    if (OnDelivered != null)
+                    {
+                        try
+                        {
+                            await OnDelivered(batch.Select(e => e.EventId).ToList());
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogError(ex, "rewards: outbox cleanup failed (events are deduplicated, harmless)");
+                        }
+                    }
+
                     _backoff = TimeSpan.Zero;
                     continue;
                 }
@@ -98,7 +115,22 @@ namespace Impostor.Server.Rewards
                 break;
             }
 
+            if (expired.Count > 0 && OnDelivered != null)
+            {
+                await OnDelivered(expired);
+            }
+
             return sent;
+        }
+
+        /// <summary>Queues events saved in the outbox by an earlier run.</summary>
+        /// <param name="events">The saved events.</param>
+        public void Preload(IEnumerable<SessionEvent> events)
+        {
+            foreach (var e in events)
+            {
+                Event(e);
+            }
         }
 
         private async Task<bool> PostAsync(List<SessionEvent> batch, CancellationToken ct)

@@ -401,6 +401,14 @@
         "resolved": "13.0.1",
         "contentHash": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A=="
       },
+      "Npgsql": {
+        "type": "Transitive",
+        "resolved": "8.0.5",
+        "contentHash": "zRG5V8cyeZLpzJlKzFKjEwkRMYIYnHWJvEor2lWXeccS2E1G2nIWYYhnukB51iz5XsWSVEtqg3AxTWM0QJ6vfg==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.0"
+        }
+      },
       "NuGet.Frameworks": {
         "type": "Transitive",
         "resolved": "6.5.0",
@@ -538,11 +546,12 @@
       "impostor.server": {
         "type": "Project",
         "dependencies": {
-          "Impostor.Api": "[1.10.7-dev, )",
+          "Impostor.Api": "[1.10.8-dev, )",
           "Impostor.Hazel": "[1.0.1, )",
           "Microsoft.Extensions.FileSystemGlobbing": "[8.0.0, )",
           "Microsoft.Extensions.Hosting": "[8.0.0, )",
           "Microsoft.Extensions.ObjectPool": "[8.0.1, )",
+          "Npgsql": "[8.0.5, )",
           "Serilog.Extensions.Hosting": "[8.0.0, )",
           "Serilog.Settings.Configuration": "[8.0.0, )",
           "Serilog.Sinks.Console": "[5.0.1, )"

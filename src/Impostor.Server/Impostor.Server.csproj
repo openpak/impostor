@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Impostor.Api\Impostor.Api.csproj" />
     <PackageReference Include="Impostor.Hazel" Version="1.0.1" />
+    <PackageReference Include="Npgsql" Version="8.0.5" />
   </ItemGroup>
 
   <ItemGroup>

@@ -54,7 +54,18 @@ namespace Impostor.Server.Rewards
             }
 
             var resolver = new PuidResolver(eosUrl, eosKey, http, TimeSpan.FromSeconds(60));
-            var tracker = new SessionTracker(Metric, SessionMin());
+            var dbUrl = Environment.GetEnvironmentVariable("IMPOSTOR_DATABASE_URL") ?? string.Empty;
+            Func<CancellationToken, Task<StateStore>>? open = null;
+            if (dbUrl.Length > 0)
+            {
+                open = ct => StateStore.OpenAsync(dbUrl, ct);
+            }
+            else
+            {
+                _logger.LogWarning("IMPOSTOR_DATABASE_URL is empty: the session clock, PUID map and outbox are memory only");
+            }
+
+            var core = new RewardsCore(Metric, new SessionTracker(Metric, SessionMin()), resolver, emitter, open, _logger);
             _logger.LogInformation("Rewards events are on: {Metric}", Metric);
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(20));
             do
@@ -62,13 +73,9 @@ namespace Impostor.Server.Rewards
                 try
                 {
                     var now = DateTimeOffset.UtcNow;
-                    var rooms = await SnapshotAsync(resolver, now, stoppingToken);
-                    foreach (var e in tracker.Tick(now, rooms))
-                    {
-                        emitter.Event(e);
-                    }
-
-                    await emitter.FlushAsync(now, stoppingToken);
+                    await core.PrepareAsync(now, stoppingToken);
+                    var rooms = await SnapshotAsync(core, now, stoppingToken);
+                    await core.TickAsync(now, rooms, stoppingToken);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
@@ -78,7 +85,7 @@ namespace Impostor.Server.Rewards
             while (await timer.WaitForNextTickAsync(stoppingToken));
         }
 
-        private async Task<List<Room>> SnapshotAsync(PuidResolver resolver, DateTimeOffset now, CancellationToken ct)
+        private async Task<List<Room>> SnapshotAsync(RewardsCore core, DateTimeOffset now, CancellationToken ct)
         {
             var rooms = new List<Room>();
             var live = new HashSet<string>();
@@ -95,11 +102,7 @@ namespace Impostor.Server.Rewards
                 foreach (var cp in game.Players)
                 {
                     var puid = (cp.Character as InnerPlayerControl)?.PlayerInfo?.ProductUserId ?? string.Empty;
-                    var baas = await resolver.ResolveAsync(puid, now, ct);
-                    if (baas != null)
-                    {
-                        players.Add(new Identity("switch", baas));
-                    }
+                    await core.MapAsync(puid, now, baas => players.Add(new Identity("switch", baas)), ct);
                 }
 
                 rooms.Add(new Room($"{code}-{_roomStart[code].ToUnixTimeSeconds()}", players));

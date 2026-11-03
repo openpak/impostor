@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
@@ -27,6 +28,20 @@ namespace Impostor.Server.Rewards
             _key = key;
             _http = http;
             _retry = retry;
+        }
+
+        /// <summary>Gets or sets a callback told every PUID that resolved (to persist it).</summary>
+        public Func<string, string, Task>? OnResolved { get; set; }
+
+        /// <summary>Loads mappings saved earlier. They are served until eosd answers differently.</summary>
+        /// <param name="known">PUID to BAAS user id.</param>
+        /// <param name="now">The time they count as seen.</param>
+        public void Preload(IReadOnlyDictionary<string, string> known, DateTimeOffset now)
+        {
+            foreach (var kv in known)
+            {
+                _cache[kv.Key] = (kv.Value, now);
+            }
         }
 
         public async Task<string?> ResolveAsync(string puid, DateTimeOffset now, CancellationToken ct)
@@ -58,6 +73,20 @@ namespace Impostor.Server.Rewards
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
             {
+            }
+
+            if (!string.IsNullOrEmpty(baas) && OnResolved != null)
+            {
+                try
+                {
+                    await OnResolved(puid, baas);
+                }
+                catch (Exception)
+                {
+                    // the database being down must not stop the mapping; the next lookup of this PUID retries
+                    _cache.TryRemove(puid, out _);
+                    return baas;
+                }
             }
 
             _cache[puid] = (string.IsNullOrEmpty(baas) ? null : baas, now);

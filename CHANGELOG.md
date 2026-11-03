@@ -1,5 +1,12 @@
 # Changelog — impostor (OpenPak fork)
 
+## openpak-v1.10.10 — 2026-11-03
+
+- Rewards state is durable: the session clock, the PUID -> BAAS map and counted sessions not yet
+  accepted by rewards (outbox) live in Postgres (`IMPOSTOR_DATABASE_URL`; tables `impostor_*`), so a
+  restart loses none. Database down: runs on memory, logs at ERROR level, retries every 30 s.
+  Restart test against a real Postgres (`IMPOSTOR_TEST_DATABASE_URL`).
+
 ## openpak-v1.10.9 — 2026-11-03
 
 - Rewards sessions: `RewardsService` reports `game_sessions.among-us` to OpenPak rewards (a player
