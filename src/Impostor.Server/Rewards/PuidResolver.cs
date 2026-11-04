@@ -44,6 +44,19 @@ namespace Impostor.Server.Rewards
             }
         }
 
+        /// <summary>Forgets every cached PUID that resolved to one of the BAAS subjects (account erasure).</summary>
+        /// <param name="subjects">BAAS subjects.</param>
+        public void Forget(IReadOnlyCollection<string> subjects)
+        {
+            foreach (var kv in _cache)
+            {
+                if (kv.Value.Baas != null && System.Linq.Enumerable.Contains(subjects, kv.Value.Baas))
+                {
+                    _cache.TryRemove(kv.Key, out _);
+                }
+            }
+        }
+
         public async Task<string?> ResolveAsync(string puid, DateTimeOffset now, CancellationToken ct)
         {
             if (puid.Length == 0 || _url.Length == 0 || _key.Length == 0)

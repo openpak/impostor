@@ -73,6 +73,18 @@ namespace Impostor.Server.Rewards
 
         public async Task PrepareAsync(DateTimeOffset now, CancellationToken ct)
         {
+            var erased = new List<string>();
+            while (RewardsErasure.Pending.TryDequeue(out var subject))
+            {
+                erased.Add(subject);
+            }
+
+            if (erased.Count > 0)
+            {
+                _tracker.Forget(erased);
+                _resolver.Forget(erased);
+            }
+
             if (_store != null || _open == null || now < _nextTry)
             {
                 return;

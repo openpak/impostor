@@ -55,6 +55,28 @@ namespace Impostor.Server.Rewards
             }
         }
 
+        /// <summary>Whether a clock key (room NUL namespace NUL subject) belongs to one of the switch subjects.</summary>
+        /// <param name="key">The clock key.</param>
+        /// <param name="subjects">BAAS subjects.</param>
+        /// <returns>True when the key is for one of them.</returns>
+        public static bool KeyIsFor(string key, IEnumerable<string> subjects)
+        {
+            var parts = key.Split('\0');
+            return parts.Length == 3 && parts[1] == "switch" && subjects.Contains(parts[2]);
+        }
+
+        /// <summary>Drops the clock entries of the subjects (account erasure).</summary>
+        /// <param name="subjects">BAAS subjects.</param>
+        public void Forget(IReadOnlyCollection<string> subjects)
+        {
+            foreach (var k in _since.Keys.Where(k => KeyIsFor(k, subjects)).ToList())
+            {
+                _since.Remove(k);
+            }
+
+            _emitted.RemoveWhere(k => KeyIsFor(k, subjects));
+        }
+
         public IReadOnlyList<SessionEvent> Tick(DateTimeOffset now, IEnumerable<Room> rooms)
         {
             var seen = new HashSet<string>();

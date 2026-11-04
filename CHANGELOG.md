@@ -1,5 +1,16 @@
 # Changelog — impostor (OpenPak fork)
 
+## openpak-v1.10.12 — 2026-11-04
+
+- Account erasure (openpak/prds#120): `DELETE /internal/accounts/{account_id}/data` with
+  `Authorization: Bearer $ACCOUNT_ERASE_KEY` on the HTTP server (port 22601); 503 while the key is unset.
+  Asks the account core (`ACCOUNT_GRPC_ADDR`, `ACCOUNT_INTERNAL_KEY`) for the account's "switch" links and
+  deletes, in one transaction, their `impostor_puid` rows, undelivered `impostor_outbox` events and their keys
+  in the saved `impostor_session_clock`; the running reporter drops the same subjects from memory on its next
+  tick. Answers `{"service":"impostor","rows":N}`; logs `account erased account=<uuid> rows=<n> service=impostor`.
+  Idempotent. Kept: nothing per player (Among Us nicknames and room state are never stored). No `account_deleted`
+  consumer. Tests in `ErasureTests`.
+
 ## openpak-v1.10.11 — 2026-11-03
 
 - One log line per request or message, to stdout (Serilog console, picked up from journald):

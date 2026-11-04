@@ -39,3 +39,13 @@ claim a player can pick. Room ids are `<code>-<first seen unix seconds>`. State 
 `REWARDS_EVENTS_URL`, `REWARDS_EVENTS_KEY`, `EOS_INTERNAL_URL`, `EOS_INTERNAL_KEY` are set.
 Not yet confirmed against a real Switch room: the game connection had stopped at DTLS in the last
 Harbor test, so the live check is that the log prints "Rewards events are on".
+
+## Account erasure
+
+`DELETE /internal/accounts/{account_id}/data` (same HTTP server as the matchmaker, `Authorization: Bearer
+$ACCOUNT_ERASE_KEY`; 503 while the key is unset, 401 on a wrong key, 400 on a non-UUID id). The only per-player
+data Impostor keeps is the rewards state in Postgres, keyed by the BAAS user id (the account's `switch` link): the
+PUID map, the undelivered counted-session outbox and the saved session clock. The endpoint reads the account's
+links from the core (`ACCOUNT_GRPC_ADDR`, default `openpak-account:20001`, with `ACCOUNT_INTERNAL_KEY`), removes
+those rows in one transaction and tells the running reporter to forget them. Nicknames, rooms and game data are
+never stored. Re-running returns `rows` 0.

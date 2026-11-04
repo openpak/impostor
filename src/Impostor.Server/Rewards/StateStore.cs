@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ namespace Impostor.Server.Rewards
     /// Durable state in Postgres (IMPOSTOR_DATABASE_URL): the session clock, the PUID to BAAS map and the
     /// outbox of counted sessions rewards has not accepted yet, so a restart loses none of them.
     /// </summary>
-    internal sealed class StateStore : IAsyncDisposable
+    internal sealed class StateStore : IAsyncDisposable, IErasureStore
     {
         private const string Schema = @"
 CREATE TABLE IF NOT EXISTS impostor_session_clock (metric text PRIMARY KEY, state text NOT NULL, saved_at timestamptz NOT NULL DEFAULT now());
@@ -132,6 +133,63 @@ CREATE TABLE IF NOT EXISTS impostor_outbox (event_id text PRIMARY KEY, metric te
             }
 
             return list;
+        }
+
+        /// <summary>
+        /// Erases everything kept for the BAAS subjects: their PUID map rows, undelivered outbox events and
+        /// their keys in the saved session clock. One transaction. Returns the rows removed.
+        /// </summary>
+        public async Task<int> EraseSubjectsAsync(IReadOnlyCollection<string> subjects, CancellationToken ct)
+        {
+            var subs = new List<string>(subjects);
+            await using var conn = await _db.OpenConnectionAsync(ct);
+            await using var tx = await conn.BeginTransactionAsync(ct);
+            var rows = 0;
+            await using (var cmd = new NpgsqlCommand("DELETE FROM impostor_puid WHERE baas_user_id = ANY($1)", conn, tx))
+            {
+                cmd.Parameters.AddWithValue(subs);
+                rows += await cmd.ExecuteNonQueryAsync(ct);
+            }
+
+            await using (var cmd = new NpgsqlCommand("DELETE FROM impostor_outbox WHERE namespace = 'switch' AND subject = ANY($1)", conn, tx))
+            {
+                cmd.Parameters.AddWithValue(subs);
+                rows += await cmd.ExecuteNonQueryAsync(ct);
+            }
+
+            var clocks = new List<(string Metric, ClockState State)>();
+            await using (var cmd = new NpgsqlCommand("SELECT metric, state FROM impostor_session_clock FOR UPDATE", conn, tx))
+            await using (var r = await cmd.ExecuteReaderAsync(ct))
+            {
+                while (await r.ReadAsync(ct))
+                {
+                    var st = JsonSerializer.Deserialize<ClockState>(r.GetString(1));
+                    if (st != null)
+                    {
+                        clocks.Add((r.GetString(0), st));
+                    }
+                }
+            }
+
+            foreach (var (metric, st) in clocks)
+            {
+                var since = st.Since.Where(kv => !SessionTracker.KeyIsFor(kv.Key, subs)).ToDictionary(kv => kv.Key, kv => kv.Value);
+                var emitted = st.Emitted.Where(k => !SessionTracker.KeyIsFor(k, subs)).ToList();
+                var removed = (st.Since.Count - since.Count) + (st.Emitted.Count - emitted.Count);
+                if (removed == 0)
+                {
+                    continue;
+                }
+
+                rows += removed;
+                await using var cmd = new NpgsqlCommand("UPDATE impostor_session_clock SET state = $2, saved_at = now() WHERE metric = $1", conn, tx);
+                cmd.Parameters.AddWithValue(metric);
+                cmd.Parameters.AddWithValue(JsonSerializer.Serialize(new ClockState(since, emitted)));
+                await cmd.ExecuteNonQueryAsync(ct);
+            }
+
+            await tx.CommitAsync(ct);
+            return rows;
         }
 
         public ValueTask DisposeAsync() => _db.DisposeAsync();
